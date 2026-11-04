@@ -106,9 +106,16 @@ c1, c2 = st.columns(2)
 c1.button("🚩 Fake link", on_click=set_url, args=("sbi-kyc-update.xyz",), use_container_width=True)
 c2.button("✅ Real link", on_click=set_url, args=("google.com",), use_container_width=True)
 
-url = st.text_input("Paste the link here", key="url", placeholder="for example sbi-kyc-update.xyz")
+url_from_link = st.query_params.get("url", "")
+auto_scan = False
+if url_from_link and not st.session_state.get("auto_done"):
+    st.session_state["url"] = url_from_link
+    st.session_state["auto_done"] = True
+    auto_scan = True
 
-if st.button("🔍 Check now", type="primary", use_container_width=True) and url:
+url = st.text_input("Enter website link", key="url")
+
+if (st.button("🔍 Check now", type="primary", use_container_width=True) or auto_scan) and url:
     with st.status("Investigation in progress...", expanded=True) as status:
         st.write("🌐 Reading the link...")
         time.sleep(0.8)
