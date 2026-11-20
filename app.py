@@ -12,22 +12,27 @@ st.set_page_config(page_title="ScamScope", page_icon="🛡️", layout="centered
 
 st.markdown("""
 <style>
-.hero{background:linear-gradient(135deg,#14213d,#2a9d8f);padding:32px;border-radius:20px;color:white;text-align:center;margin-bottom:20px}
-.hero h1{font-size:46px;margin:0;color:white}
-.hero p{font-size:18px;margin:8px 0 0 0;color:#e6f2f0}
 .score{padding:28px;border-radius:20px;text-align:center;color:white;margin:16px 0}
 .score .num{font-size:72px;font-weight:700;line-height:1}
 .score .txt{font-size:24px;font-weight:600}
 </style>
-<div class="hero"><h1>🛡️ ScamScope</h1>
-<p>Check before you click: is this link real or a scam?</p></div>
 """, unsafe_allow_html=True)
+
+IMG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "images")
+
+
+def show(name, container=None, **kw):
+    path = os.path.join(IMG_DIR, name)
+    if os.path.exists(path):
+        (container or st).image(path, **kw)
+
+
+show("banner.jpg", use_container_width=True)
 
 BRANDS = {"sbi": "sbi.co.in", "hdfc": "hdfcbank.com", "icici": "icicibank.com",
           "paytm": "paytm.com", "phonepe": "phonepe.com"}
 WORDS = ["kyc", "update", "verify", "bill", "otp", "blocked", "reward", "scholarship"]
 BAD_END = (".xyz", ".top", ".click", ".buzz")
-
 
 ASKS = {"asks_otp": "OTP", "asks_upi_pin": "UPI PIN", "asks_card_details": "card details",
         "asks_aadhaar": "Aadhaar", "asks_password": "password"}
@@ -60,7 +65,7 @@ def visit_page(url):
 
 def check(url):
     if not url.startswith("http"):
-        url = "http://" + url
+        url = "https://" + url
     p = urlparse(url)
     host = p.netloc.lower().split(":")[0]
     if host.startswith("www."):
@@ -106,16 +111,9 @@ c1, c2 = st.columns(2)
 c1.button("🚩 Fake link", on_click=set_url, args=("sbi-kyc-update.xyz",), use_container_width=True)
 c2.button("✅ Real link", on_click=set_url, args=("google.com",), use_container_width=True)
 
-url_from_link = st.query_params.get("url", "")
-auto_scan = False
-if url_from_link and not st.session_state.get("auto_done"):
-    st.session_state["url"] = url_from_link
-    st.session_state["auto_done"] = True
-    auto_scan = True
+url = st.text_input("Paste the link here", key="url", placeholder="for example sbi-kyc-update.xyz")
 
-url = st.text_input("Enter website link", key="url")
-
-if (st.button("🔍 Check now", type="primary", use_container_width=True) or auto_scan) and url:
+if st.button("🔍 Check now", type="primary", use_container_width=True) and url:
     with st.status("Investigation in progress...", expanded=True) as status:
         st.write("🌐 Reading the link...")
         time.sleep(0.8)
@@ -140,18 +138,23 @@ if (st.button("🔍 Check now", type="primary", use_container_width=True) or aut
 
     if score >= 60:
         color, title = "#d62839", "HIGH RISK"
+        img = "risk_high.png"
         advice = "This link looks like a scam. Do not enter anything on it: no OTP, PIN, card number or Aadhaar."
     elif score >= 30:
         color, title = "#e09f3e", "SUSPICIOUS LINK"
+        img = "risk_medium.png"
         advice = "Something looks wrong with this link. Open the real website yourself and check first."
     else:
         color, title = "#2a9d8f", "LOW RISK"
+        img = "risk_low.png"
         advice = "No major danger found, but still never share your OTP or PIN with anyone."
 
     st.markdown(f'<div class="score" style="background:{color}"><div class="num">{score}/100</div>'
                 f'<div class="txt">{title}</div></div>', unsafe_allow_html=True)
     st.progress(score / 100)
-    st.info(f"🗣️ {advice}")
+    ic, tx = st.columns([1, 3])
+    show(img, ic, use_container_width=True)
+    tx.info(f"🗣️ {advice}")
 
     if flags:
         st.subheader("🚩 Red flags")
@@ -168,4 +171,28 @@ if (st.button("🔍 Check now", type="primary", use_container_width=True) or aut
         st.write("4. Call the cyber crime helpline **1930** or report at cybercrime.gov.in.")
         st.caption("Please verify the helpline and website details online before relying on them.")
 
+st.divider()
+st.subheader("How it works")
+s1, s2, s3 = st.columns(3)
+for col, f, title, text in [
+    (s1, "step_1.png", "1. Paste", "Paste a suspicious link."),
+    (s2, "step_2.png", "2. Investigate", "We check the domain and open the page in a safe cloud browser."),
+    (s3, "step_3.png", "3. Get a verdict", "See the risk score, red flags and the real site."),
+]:
+    show(f, col, width=110)
+    col.markdown(f"**{title}**")
+    col.write(text)
+
+st.subheader("Scams we help you catch")
+k1, k2, k3, k4 = st.columns(4)
+for col, f, label in [
+    (k1, "scam_kyc.png", "Fake KYC updates"),
+    (k2, "scam_power.png", "Electricity threats"),
+    (k3, "scam_job.png", "Fake jobs and scholarships"),
+    (k4, "scam_clone.png", "Cloned bank and UPI pages"),
+]:
+    show(f, col, width=90)
+    col.caption(label)
+
 st.caption("Note: this is a risk estimate, not legal proof. Some scam sites block bots.")
+st.caption("Built by Ankita | Team SOLOSYNTAX | Check before you click")
