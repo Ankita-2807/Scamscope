@@ -111,9 +111,18 @@ c1, c2 = st.columns(2)
 c1.button("🚩 Fake link", on_click=set_url, args=("sbi-kyc-update.xyz",), use_container_width=True)
 c2.button("✅ Real link", on_click=set_url, args=("google.com",), use_container_width=True)
 
+# If the address has ?url=..., fill the box and check it automatically (once)
+qp = st.query_params.get("url")
+if qp and st.session_state.get("_qp_done") != qp:
+    st.session_state["url"] = qp
+    st.session_state["auto_check"] = True
+    st.session_state["_qp_done"] = qp
 url = st.text_input("Paste the link here", key="url", placeholder="for example sbi-kyc-update.xyz")
 
-if st.button("🔍 Check now", type="primary", use_container_width=True) and url:
+auto = st.session_state.pop("auto_check", False)
+clicked = st.button("🔍 Check now", type="primary", use_container_width=True)
+
+if (clicked or auto) and url:
     with st.status("Investigation in progress...", expanded=True) as status:
         st.write("🌐 Reading the link...")
         time.sleep(0.8)
